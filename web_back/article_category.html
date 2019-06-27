@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/main.css">
     <script src="js/jquery-1.12.4.min.js"></script>
     <script src="js/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./js/template-web.js"></script>
 </head>
 
 <body>
@@ -72,7 +73,7 @@
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-center">
-                            <a href="#" class="btn btn-success" data-toggle="modal" data-target="#addModal">新增分类</a>
+                            <a href="#" class="btn btn-success btn_newly" data-toggle="modal" data-target="#addModal">新增分类</a>
                         </td>
                     </tr>
                 </tfoot>
@@ -90,12 +91,13 @@
             <div class="modal-body">
               <form>
                 <div class="form-group">
+                  <input type="hidden" name="id" id="id">
                   <label for="recipient-name" class="control-label">分类名称:</label>
-                  <input type="text" class="form-control" id="recipient-name">
+                  <input type="text" class="form-control username" id="recipient-name" name="name">
                 </div>
                 <div class="form-group">
                   <label for="message-text" class="control-label">分类别名:</label>
-                  <input type="text" class="form-control" id="recipient-name">
+                  <input type="text" class="form-control  slugname" id="recipient-name" name="slug">
                 </div>
               </form>
             </div>
@@ -106,30 +108,160 @@
           </div>
         </div>
       </div>
-
-      <script>
-          $('#addModal').modal({
-            show:false,
-            backdrop:false
-          });
-
-          $('#model_shutoff').click(function(){
-            alert('shutoff');
-            $('#addModal').modal('hide');
-          });
-
-          $('#model_add').click(function(){
-            alert('add');
-            $('#addModal').modal('hide');
-          });
-
-          $('.category_table').delegate('a','click',function(){
-              if($(this).hasClass('btn-info')){
-                $('#addModal .modal-title').html('修改分类名称');
-                $('#addModal').modal('show');
-              }
-          })      
+      <script id="tpm" type="text/html">
+        {{each data}}
+        <tr>
+            <td>{{$value.name}}</td>
+            <td>{{$value.slug}}</td>
+            <td class="text-center">
+                <a href="#"  data-id="{{$value.id}}" class="btn btn-info btn-xs btn-edit" id="mmp" >编辑</a>
+                <a href="#" class="btn btn-danger btn-xs btn-delete"  data-id="{{$value.id}}" >删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    
       </script>
+    <script>
+        $('#addModal').modal({
+            show: false,
+            backdrop: false
+        });
+
+        $('#model_shutoff').click(function () {
+            // alert('shutoff');
+            $('#addModal').modal('hide');
+        });
+
+        //   $('#model_add').click(function(){
+        //     alert('add');
+        //     $('#addModal').modal('hide');
+        //   });
+
+
+
+        function pagerefresh() {
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8000/admin/category_search',
+                success: function (backData) {
+                      console.log(backData);
+                    if (backData.code == 200) {
+                        var tmmHtml = template('tpm', backData)
+                        $('tbody').html(tmmHtml)
+                    }
+                }
+            });
+        }
+        pagerefresh()
+
+
+
+        // $('.category_table').delegate('a', 'click', function () {
+        //     if ($(this).hasClass('btn-info')) {
+        //         $('#addModal .modal-title').html('修改分类名称');
+        //         $('#addModal').modal('show');
+        //     }
+        // })
+        
+        //  给页面上的那个 新增分类按钮(不是模态框里的那个新增) ,设置点击事件
+         $('.btn_newly').on('click', function () {
+                //修改模态框里面的title显示的文本.
+                $('#addModal .modal-title').html('新增分类');
+                //给那个模态框里面的按钮,移除一个这个btn-success类.和修改文本
+                $('#model_add').removeClass('btn-success').text('新增');
+            })
+      
+        $('#model_add').on('click', function (e) {
+            e.preventDefault()
+            if($(this).hasClass('cbtn-success')){
+                var data1=$('from').serialize();
+                //把form表单中带有name属性的标签的值,获取出来,组成key=value&key=value这种格式的字符串. 
+                $.ajax({
+                    type:'post',
+                    url:'http://localhost:8000/admin/category_edit',
+                    data:data1,
+                    success:function(backData){
+                         console.log(backData);
+                         if(backData.code == 200){
+                                alert('修改成功')
+                                pagerefresh()
+                            }
+                    }
+                })
+            }
+            else{
+                var userName = $('.username').val();
+                var slugName = $('.slugname').val();
+                $.ajax({
+                    type: 'post',
+                    url: 'http://localhost:8000/admin/category_add',
+                    data: {
+                        name: userName,
+                        slug: slugName
+                    },
+                    success: function (backData) {
+                        console.log(backData);
+                        if (backData.code == 200) {
+                            alert('新增成功')
+                            $('#addModal').modal('hide');
+                            pagerefresh()
+                        }
+                    }
+                });
+            }
+
+        });
+
+        $('tbody').on('click','.btn-delete',function(e){
+            e.preventDefault();
+            var that=$(this)
+            var id=$(this).attr('data-id')
+            $.ajax({
+                type:'post',
+                url:'http://localhost:8000/admin/category_delete',
+                data:{
+                    id:id
+                },
+                success:function(backData){
+                    // console.log(backData);
+                    if(backData.code==200){
+                       alert('删除成功')
+                       that.parent().parent().remove();
+                    }  
+                }
+            });
+        });
+     
+
+            //给编辑按钮设置一个点击事件,使用委托的方式.
+            $('tbody').on('click', '.btn-edit', function (e) {
+                e.preventDefault()
+                //修改模态框里面的title显示的文本.
+                $('#addModal .modal-title').html('修改分类');
+                //给那个模态框里面的按钮,添加一个这个btn-success类.和修改文本
+                $('#model_add').addClass('btn-success').text('保存');
+
+                //编辑按钮中自定义属性里面存放的id取出来
+                var id1 = $(this).attr('data-id');
+                console.log(id1);
+                //获取当前点击的a标签前面的文章类别和文章类别别名,显示在模态框对应的input标签中.
+                var cataName1 = $(this).parent().prev().prev().text();
+                console.log(cataName1);
+                var slugName1 = $(this).parent().prev().text();
+                console.log(slugName1);
+
+                //把当前点击的编辑按钮里面保存的id,还有当前点击的编辑按钮前面的分类名和别名 ,赋值给模态框里面对应的input标签
+                $('.modal-body .id').val(id1);
+                $('.modal-body .username').val(cataName1);
+                $('.modal-body .slugname').val(slugName1);
+                $('#addModal').modal('show');
+            })
+
+
+
+
+        
+    </script>
 
 </body>
 
