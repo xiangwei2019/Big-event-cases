@@ -15,6 +15,7 @@
     <script src="js/jedate/js/jedate.js"></script>
     <script src="js/tinymce/js/tinymce/tinymce.min.js"></script>
     <script src="js/tinymce/js/tinymce_setup.js"></script>
+    <script src="./js/template-web.js"></script>
 </head>
 
 <body>
@@ -34,6 +35,7 @@
                     <label for="inputPassword3" class="col-sm-2 control-label">文章封面：</label>
                     <div class="col-sm-10">
                         <input type="file" id="exampleInputFile">
+                        <img src="" alt="" style="height:100px">
                     </div>
                 </div>
                 <div class="form-group">
@@ -56,7 +58,7 @@
                             <input type="text" class="form-control" placeholder="YYYY-MM-DD" id="dateinput">
                             <span class="input-group-btn">
                                 <button class="btn btn-default" type="button"
-                                    onclick="jeDate('#dateinput',{trigger:false,format: 'YYYY-MM-DD'})"><i
+                                    ><i
                                         class="iconfont icon-icondate"></i></button>
                             </span>
                         </div>
@@ -79,7 +81,40 @@
             </form>
         </div>
     </div>
+    <script id="tpm" type="text/html">
+    {{each data}}
+    <option value="{{$value.id}}">{{$value.name}}</option>
+    {{/each}}
+    
+    </script>
+     <script>
+     $('#exampleInputFile').on('change',function(){
+         var icon=this.files[0];
+         var url=URL.createObjectURL(icon)
+         $(this).next().attr('src',url)
+     })
+     $.ajax({
+         type:'get',
+         url:'http://localhost:8000/admin/category_search',
+         success:function(backData){
+             console.log(backData);
+             if(backData.code==200){
+                var tmpHtml=template("tpm",backData)
+                $('.form-control').html(tmpHtml)
+             }
+         }
+     })
+    
+     $('.btn-default').on('click',function(){
+        jeDate('#dateinput',{
+         trigger:false,
+         format: 'YYYY-MM-DD',
+         isToday:true,
+         })
+     })
 
+    
+     </script>
 </body>
 
 </html>
